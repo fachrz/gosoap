@@ -1,6 +1,7 @@
 package gosoap
 
 import (
+	"encoding/xml"
 	"net/http"
 	"testing"
 )
@@ -39,8 +40,17 @@ type CheckVatRequest struct {
 	VatNumber   string
 }
 
+type CapitalCity struct {
+	XMLName         xml.Name `xml:"CapitalCity"`
+	SCountryISOCode string   `xml:"sCountryISOCode"`
+}
+
+type Whois struct {
+	DomainName string `xml:"DomainName"`
+}
+
 func (r CheckVatRequest) SoapBuildRequest() *Request {
-	return NewRequest("checkVat", Params{
+	return NewRequest("checkVat", map[string]string{
 		"countryCode": r.CountryCode,
 		"vatNumber":   r.VatNumber,
 	})
@@ -67,50 +77,28 @@ type WhoisResponse struct {
 	WhoisResult string
 }
 
+type ReqParam struct {
+	VatNumber   string
+	CountryCode string
+}
+
 var (
 	rv CheckVatResponse
 	rc CapitalCityResponse
 	rn NumberToWordsResponse
 	rw WhoisResponse
 
-	params = Params{}
+	params = ReqParam{}
 )
 
 func TestClient_Call(t *testing.T) {
-	soap, err := SoapClient("http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl")
+
+	soap, err := SoapClient("http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL")
 	if err != nil {
 		t.Errorf("error not expected: %s", err)
 	}
 
-	var res *Response
-
-	params["vatNumber"] = "6388047V"
-	params["countryCode"] = "IE"
-	res, err = soap.Call("", params)
-	if err == nil {
-		t.Errorf("method is empty")
-	}
-
-	if res != nil {
-		t.Errorf("body is empty")
-	}
-
-	res, err = soap.Call("checkVat", params)
-	if err != nil {
-		t.Errorf("error in soap call: %s", err)
-	}
-
-	res.Unmarshal(&rv)
-	if rv.CountryCode != "IE" {
-		t.Errorf("error: %+v", rv)
-	}
-
-	soap, err = SoapClient("http://webservices.oorsprong.org/websamples.countryinfo/CountryInfoService.wso?WSDL")
-	if err != nil {
-		t.Errorf("error not expected: %s", err)
-	}
-
-	res, err = soap.Call("CapitalCity", Params{"sCountryISOCode": "GB"})
+	res, err := soap.Call("CapitalCity", CapitalCity{SCountryISOCode: "GB"})
 	if err != nil {
 		t.Errorf("error in soap call: %s", err)
 	}
@@ -126,7 +114,7 @@ func TestClient_Call(t *testing.T) {
 		t.Errorf("error not expected: %s", err)
 	}
 
-	res, err = soap.Call("NumberToWords", Params{"ubiNum": "23"})
+	res, err = soap.Call("NumberToWords", map[string]string{"ubiNum": "23"})
 	if err != nil {
 		t.Errorf("error in soap call: %s", err)
 	}
@@ -142,7 +130,7 @@ func TestClient_Call(t *testing.T) {
 		t.Errorf("error not expected: %s", err)
 	}
 
-	res, err = soap.Call("Whois", Params{"DomainName": "google.com"})
+	res, err = soap.Call("Whois", Whois{DomainName: "google.com"})
 	if err != nil {
 		t.Errorf("error in soap call: %s", err)
 	}
@@ -154,7 +142,7 @@ func TestClient_Call(t *testing.T) {
 	}
 
 	c := &Client{}
-	res, err = c.Call("", Params{})
+	res, err = c.Call("", map[string]string{})
 	if err == nil {
 		t.Errorf("error expected but nothing got.")
 	}
@@ -195,7 +183,7 @@ func TestClient_Call_NonUtf8(t *testing.T) {
 		t.Errorf("error not expected: %s", err)
 	}
 
-	_, err = soap.Call("login", Params{"client": "demo", "username": "robert", "password": "iliasdemo"})
+	_, err = soap.Call("login", map[string]string{"client": "demo", "username": "robert", "password": "iliasdemo"})
 	if err != nil {
 		t.Errorf("error in soap call: %s", err)
 	}

@@ -19,7 +19,7 @@ import (
 type HeaderParams map[string]interface{}
 
 // Params type is used to set the params in soap request
-type Params map[string]interface{}
+type Params interface{}
 
 // SoapClient return new *Client to handle the requests with the WSDL
 func SoapClient(wsdl string) (*Client, error) {
@@ -148,8 +148,8 @@ func (c *Client) Do(req *Request) (res *Response, err error) {
 	if err != nil {
 		return nil, err
 	}
-
 	b, err := p.doRequest(c.getLocation())
+
 	if err != nil {
 		return nil, ErrorWithPayload{err, p.Payload}
 	}
