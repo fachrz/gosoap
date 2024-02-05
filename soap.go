@@ -44,7 +44,6 @@ type Client struct {
 	HeaderName   string
 	HeaderParams HeaderParams
 	Definitions  *wsdlDefinitions
-	ForceHTTPS   bool
 	// Must be set before first request otherwise has no effect, minimum is 15 minutes.
 	RefreshDefinitionsAfter time.Duration
 	Username                string
@@ -55,6 +54,7 @@ type Client struct {
 	onRequest            sync.WaitGroup
 	onDefinitionsRefresh sync.WaitGroup
 	wsdl                 string
+	UseDefinitionURL     bool
 }
 
 // Call call's the method m with Params p
@@ -102,9 +102,13 @@ func (c *Client) SetWSDL(wsdl string) {
 
 func (c *Client) getLocation() string {
 	location := c.Definitions.Services[0].Ports[0].SoapAddresses[0].Location
-	if c.ForceHTTPS {
-		location = makeHTTPS(location)
+
+	//use URL provided on client initialization
+	if c.UseDefinitionURL {
+		defURL, _ := url.Parse(c.wsdl)
+		location = defURL.Scheme + "://" + defURL.Host + defURL.Path
 	}
+
 	return location
 }
 
@@ -215,10 +219,6 @@ func (p *process) httpClient() *http.Client {
 		return p.Client.HttpClient
 	}
 	return http.DefaultClient
-}
-
-func makeHTTPS(url string) string {
-	return strings.Replace(url, "http", "https", 1)
 }
 
 type ErrorWithPayload struct {
