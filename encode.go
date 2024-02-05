@@ -16,10 +16,6 @@ var start = xml.StartElement{
 	},
 }
 
-type bodyTag struct {
-	Data interface{}
-}
-
 type baseContent struct {
 	Body struct {
 		Data interface{}
