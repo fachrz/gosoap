@@ -206,3 +206,42 @@ func TestProcess_doRequest(t *testing.T) {
 		t.Errorf("invalid WSDL")
 	}
 }
+
+func TestUseDefinitionURL(t *testing.T) {
+	initDefinition := func() *wsdlDefinitions {
+		soapAddresses := []*soapAddress{
+			{Location: "http://demo.ilias.de/webservice/soap/server.php"},
+		}
+		ports := []*wsdlPort{
+			{SoapAddresses: soapAddresses},
+		}
+		service := []*wsdlService{
+			{Ports: ports},
+		}
+		definition := &wsdlDefinitions{Services: service}
+
+		return definition
+	}
+
+	client := &Client{
+		wsdl:             "https://demo.ilias.de:4330/webservice/soap/server.php?wsdl",
+		HttpClient:       &http.Client{},
+		UseDefinitionURL: true,
+		Definitions:      initDefinition(),
+	}
+
+	if client.getLocation() != "https://demo.ilias.de:4330/webservice/soap/server.php" {
+		t.Errorf("url invalid")
+	}
+
+	client2 := &Client{
+		wsdl:             "https://demo.ilias.de:4330/webservice/soap/server.php?wsdl",
+		HttpClient:       &http.Client{},
+		UseDefinitionURL: false,
+		Definitions:      initDefinition(),
+	}
+
+	if client2.getLocation() != "http://demo.ilias.de/webservice/soap/server.php" {
+		t.Errorf("url invalid")
+	}
+}
