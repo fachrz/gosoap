@@ -10,7 +10,7 @@ var (
 		Err    string
 	}{
 		{
-			Params: Params{"": ""},
+			Params: map[string]string{"": ""},
 			Err:    "error expected: xml: start tag with no name",
 		},
 	}

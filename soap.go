@@ -19,7 +19,7 @@ import (
 type HeaderParams map[string]interface{}
 
 // Params type is used to set the params in soap request
-type Params map[string]interface{}
+type Params interface{}
 
 // SoapClient return new *Client to handle the requests with the WSDL
 func SoapClient(wsdl string) (*Client, error) {
@@ -54,6 +54,7 @@ type Client struct {
 	onRequest            sync.WaitGroup
 	onDefinitionsRefresh sync.WaitGroup
 	wsdl                 string
+	UseDefinitionURL     bool
 }
 
 // Call call's the method m with Params p
@@ -99,6 +100,18 @@ func (c *Client) SetWSDL(wsdl string) {
 	c.initWsdl()
 }
 
+func (c *Client) getLocation() string {
+	location := c.Definitions.Services[0].Ports[0].SoapAddresses[0].Location
+
+	//use URL provided on client initialization
+	if c.UseDefinitionURL {
+		defURL, _ := url.Parse(c.wsdl)
+		location = defURL.Scheme + "://" + defURL.Host + defURL.Path
+	}
+
+	return location
+}
+
 // Process Soap Request
 func (c *Client) Do(req *Request) (res *Response, err error) {
 	c.onDefinitionsRefresh.Wait()
@@ -139,8 +152,8 @@ func (c *Client) Do(req *Request) (res *Response, err error) {
 	if err != nil {
 		return nil, err
 	}
+	b, err := p.doRequest(c.getLocation())
 
-	b, err := p.doRequest(c.Definitions.Services[0].Ports[0].SoapAddresses[0].Location)
 	if err != nil {
 		return nil, ErrorWithPayload{err, p.Payload}
 	}
